@@ -6,7 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rand = { version = "0.8.5", features = ["nightly"]  }
+# rand = { version = "0.8.5", features = ["nightly"]  }
+ulid = {version = "1.1", features = []}
 serde = { version = "1.0.188", features = ["serde_derive", "rc", "derive"] }
 serde_derive = "1.0.188"
 serde_json = {version = "1"}
