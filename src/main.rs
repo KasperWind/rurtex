@@ -3,22 +3,31 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 
 #[derive(Serialize, Deserialize)]
-struct HeaderMessage<'a> {
-    src: &'a str,
+struct HeaderMessage<'a, T> {
+    pub src: &'a str,
     #[serde(rename = "dest")]
-    dst: &'a str,
-    body: InitMessage<'a>
+    pub dst: &'a str,
+    pub body: T
 }
 
 
-#[derive(Serialize, Deserialize)]
-struct InitMessage<'a> {
-    msg_id: isize,
+#[derive(Deserialize)]
+struct InitRequest<'a> {
+    pub msg_id: isize,
     #[serde(rename = "type")]
-    type_: &'a str,
-    node_id: &'a str,
-    node_ids: Vec<&'a str>, 
+    pub type_: &'a str,
+    pub node_id: &'a str,
+    pub node_ids: Vec<&'a str>, 
 }
+
+#[derive(Serialize)]
+struct InitResponse<'a> {
+    pub msg_id: isize,
+    #[serde(rename = "type")]
+    pub type_: &'a str,
+    pub in_reply_to: isize,
+}
+
 
 fn main() {
     let input = io::stdin();
@@ -26,24 +35,22 @@ fn main() {
     let mut handle = input.lock();
     let mut buffer = String::new();
     handle.read_line( &mut buffer).expect("Should read fine");
-    
-    let value: Value = serde_json::from_str(&buffer).expect("proper formattet json");
-    let body = value.get("body").expect("body");
 
-    let src = value.get("src").expect("src").as_str();
-    let dst = value.get("dest").expect("dest").as_str();
-    let msg_id = body.get("msg_id").expect("msg_id node").as_u64().expect("msg_id value");
+    let init_request: HeaderMessage<InitRequest> = serde_json::from_str(&buffer).expect("InitMessage");
 
-    let json = json!({
-        "src": dst,
-        "dest": src,
-        "body": 
-        {
-            "type" : "init_ok", 
-            "in_reply_to" : msg_id }
-        } );
+    let init_response = InitResponse {
+        msg_id: init_request.body.msg_id,
+        type_: "init_ok",
+        in_reply_to: init_request.body.msg_id,
+    };
 
-    let json = serde_json::to_string(&json).expect("valid internal json");
+    let init_response = HeaderMessage {
+        src: init_request.dst,
+        dst: init_request.src,
+        body: init_response,
+    };
+
+    let json = serde_json::to_string(&init_response).expect("valid internal json");
     let json = format!("{json}\n");  
 
     output.write(json.as_bytes()).expect("write ok");
