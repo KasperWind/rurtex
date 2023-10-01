@@ -1,4 +1,7 @@
+mod echo;
 use serde::{Serialize, Deserialize};
+
+use self::echo::{EchoResponse, EchoRequest};
 
 #[derive(Serialize, Deserialize)]
 pub struct HeaderMessage<'a> {
@@ -12,11 +15,9 @@ impl<'a> HeaderMessage<'a> {
     pub fn respond(self) -> Option<HeaderMessage<'a>> {
 
         let resp:Option<(Payload<'_>, &'a str)> = match self.body.payload {
-            Payload::Init(_) => Some((Payload::InitOk(InitResponse { in_reply_to: self.body.msg_id }),"init_ok")),
+            Payload::Init(i) => i.respond(self.body.msg_id),
             Payload::InitOk(_) => None,
-            Payload::Echo(e) => Some((Payload::EchoOk(
-                EchoResponse { in_reply_to: self.body.msg_id, echo: e.echo }
-            ),"echo_ok")),
+            Payload::Echo(e) => e.respond(self.body.msg_id),
             Payload::EchoOk(_) => None,
         };
 
@@ -25,6 +26,7 @@ impl<'a> HeaderMessage<'a> {
             Some(HeaderMessage { src: self.dst, dst: self.src, body: 
                 Body { msg_id: self.body.msg_id, type_, payload }
             })
+
         } else {
             None
         }
@@ -39,6 +41,10 @@ pub struct Body<'a> {
     pub type_: &'a str,
     #[serde(borrow, flatten)]
     pub payload: Payload<'a>
+}
+
+trait Respond<'a> {
+   fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)>;
 }
 
 #[derive(Serialize, Deserialize)]
@@ -60,40 +66,15 @@ pub struct InitRequest<'a> {
     pub node_ids: Vec<&'a str>, 
 }
 
+impl<'a> Respond<'a> for InitRequest<'a> {
+    fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)> {
+        Some((Payload::InitOk(InitResponse { in_reply_to: msg_id }),"init_ok"))
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 pub struct InitResponse {
     pub in_reply_to: isize,
 }
 
-// impl<'a> HeaderMessage<'a, InitRequest<'a>> {
-//
-//     pub fn repond(&self) -> HeaderMessage<'a, InitResponse<'a>> {
-//
-//         HeaderMessage { src: self.dst, dst: self.src, body: 
-//             InitResponse { msg_id: self.body.msg_id, type_: "init_ok", in_reply_to: self.body.msg_id } }
-//     }
-// }
 
-#[derive(Serialize, Deserialize)]
-pub struct EchoRequest<'a> {
-    pub echo: &'a str,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct EchoResponse<'a> {
-    pub in_reply_to: isize,
-    pub echo: &'a str,
-}
-
-// impl<'a> HeaderMessage<'a, EchoRequest<'a>> {
-//
-//     pub fn repond(&self) -> HeaderMessage<'a, EchoResponse<'a>> {
-//
-//         HeaderMessage { src: self.dst, dst: self.src, body: 
-//             EchoResponse { msg_id: self.body.msg_id, 
-//                 type_: "echo_ok", 
-//                 in_reply_to: self.body.msg_id,
-//                 echo: self.body.echo,
-//             } }
-//     }
-// }
