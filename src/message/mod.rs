@@ -1,8 +1,13 @@
+mod broadcast;
 mod echo;
 mod generate;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
-use self::{echo::{EchoResponse, EchoRequest}, generate::{GenerateRequest, GenerateResponse}};
+use self::{
+    broadcast::{BroadcastRequest, BroadcastResponse},
+    echo::{EchoRequest, EchoResponse},
+    generate::{GenerateRequest, GenerateResponse},
+};
 
 #[derive(Serialize, Deserialize)]
 pub struct HeaderMessage<'a> {
@@ -13,23 +18,29 @@ pub struct HeaderMessage<'a> {
 }
 
 impl<'a> HeaderMessage<'a> {
+    #[allow(dead_code)]
     pub fn respond(self) -> Option<HeaderMessage<'a>> {
-
-        let resp:Option<(Payload<'_>, &'a str)> = match self.body.payload {
+        let resp: Option<(Payload<'_>, &'a str)> = match self.body.payload {
             Payload::Init(i) => i.respond(self.body.msg_id),
             Payload::InitOk(_) => None,
             Payload::Echo(e) => e.respond(self.body.msg_id),
             Payload::EchoOk(_) => None,
             Payload::Generate(g) => g.respond(self.body.msg_id),
             Payload::GenerateOk(_) => None,
+            Payload::Broadcast(b) => b.respond(self.body.msg_id),
+            Payload::BroadcastOk(_) => None,
         };
 
         if let Some((payload, type_)) = resp {
-
-            Some(HeaderMessage { src: self.dst, dst: self.src, body: 
-                Body { msg_id: self.body.msg_id, type_, payload }
+            Some(HeaderMessage {
+                src: self.dst,
+                dst: self.src,
+                body: Body {
+                    msg_id: self.body.msg_id,
+                    type_,
+                    payload,
+                },
             })
-
         } else {
             None
         }
@@ -37,22 +48,19 @@ impl<'a> HeaderMessage<'a> {
 }
 
 #[derive(Serialize, Deserialize)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub struct Body<'a> {
     pub msg_id: isize,
     #[serde(rename = "type")]
     pub type_: &'a str,
     #[serde(borrow, flatten)]
-    pub payload: Payload<'a>
+    pub payload: Payload<'a>,
 }
 
-trait Respond<'a> {
-   fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)>;
-}
 
 #[derive(Serialize, Deserialize)]
 #[serde(untagged)]
-#[serde(rename_all="snake_case")]
+#[serde(rename_all = "snake_case")]
 pub enum Payload<'a> {
     #[serde(borrow)]
     Init(InitRequest<'a>),
@@ -63,17 +71,24 @@ pub enum Payload<'a> {
     EchoOk(EchoResponse<'a>),
     Generate(GenerateRequest),
     GenerateOk(GenerateResponse),
+    Broadcast(BroadcastRequest),
+    BroadcastOk(BroadcastResponse),
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct InitRequest<'a> {
     pub node_id: &'a str,
-    pub node_ids: Vec<&'a str>, 
+    pub node_ids: Vec<&'a str>,
 }
 
-impl<'a> Respond<'a> for InitRequest<'a> {
+impl<'a> InitRequest<'a> {
     fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)> {
-        Some((Payload::InitOk(InitResponse { in_reply_to: msg_id }),"init_ok"))
+        Some((
+            Payload::InitOk(InitResponse {
+                in_reply_to: msg_id,
+            }),
+            "init_ok",
+        ))
     }
 }
 
@@ -81,5 +96,3 @@ impl<'a> Respond<'a> for InitRequest<'a> {
 pub struct InitResponse {
     pub in_reply_to: isize,
 }
-
-
