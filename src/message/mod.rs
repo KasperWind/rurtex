@@ -1,7 +1,8 @@
 mod echo;
+mod generate;
 use serde::{Serialize, Deserialize};
 
-use self::echo::{EchoResponse, EchoRequest};
+use self::{echo::{EchoResponse, EchoRequest}, generate::{GenerateRequest, GenerateResponse}};
 
 #[derive(Serialize, Deserialize)]
 pub struct HeaderMessage<'a> {
@@ -19,6 +20,8 @@ impl<'a> HeaderMessage<'a> {
             Payload::InitOk(_) => None,
             Payload::Echo(e) => e.respond(self.body.msg_id),
             Payload::EchoOk(_) => None,
+            Payload::Generate(g) => g.respond(self.body.msg_id),
+            Payload::GenerateOk(_) => None,
         };
 
         if let Some((payload, type_)) = resp {
@@ -58,6 +61,8 @@ pub enum Payload<'a> {
     Echo(EchoRequest<'a>),
     #[serde(borrow)]
     EchoOk(EchoResponse<'a>),
+    Generate(GenerateRequest),
+    GenerateOk(GenerateResponse),
 }
 
 #[derive(Serialize, Deserialize)]
