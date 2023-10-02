@@ -1,7 +1,7 @@
 use std::io::{self, BufRead, Write};
 
 use error::Result;
-use message::{HeaderMessage, Payload, Body};
+use message::{HeaderMessage, Payload};
 
 mod message;
 pub mod error;
@@ -13,36 +13,32 @@ pub struct Rurtex {
 impl Rurtex {
     fn process<'a>(&mut self, msg: HeaderMessage<'a>)  -> Option<HeaderMessage<'a>> {
 
-        let resp: Option<(Payload<'_>, &'a str)> = match msg.body.payload {
-            Payload::Init(i) => i.respond(msg.body.msg_id),
-            Payload::InitOk(_) => None,
-            Payload::Echo(e) => e.respond(msg.body.msg_id),
-            Payload::EchoOk(_) => None,
-            Payload::Generate(g) => g.respond(msg.body.msg_id),
-            Payload::GenerateOk(_) => None,
-            Payload::Broadcast(b) => {
+        let resp: Option<Payload<'_>> = match msg.body {
+            Payload::Init{i, ..} => i.respond(),
+            Payload::InitOk{ .. } => None,
+            Payload::Echo{e, ..} => e.respond(),
+            Payload::EchoOk{ .. } => None,
+            Payload::Generate{g, ..} => g.respond(),
+            Payload::GenerateOk{ ..} => None,
+            Payload::Broadcast{b, ..} => {
                 self.msg.push(b.message);
-                b.respond(msg.body.msg_id)
+                b.respond()
             },
-            Payload::BroadcastOk(_) => None,
-            Payload::Read(r) => {
-                r.respond(&self.msg, msg.body.msg_id)
+            Payload::BroadcastOk{ .. } => None,
+            Payload::Read{r, ..} => {
+                r.respond(&self.msg)
             },
-            Payload::ReadOk(_) => None,
-            Payload::Topology(t) => t.respond(msg.body.msg_id),
-            Payload::TopologyOk(_) => None,
+            Payload::ReadOk{ .. } => None,
+            Payload::Topology{t, ..} => t.respond(),
+            Payload::TopologyOk{ .. } => None,
 
         };
 
-        if let Some((payload, type_)) = resp {
+        if let Some(payload) = resp {
             Some(HeaderMessage {
                 src: msg.dst,
                 dst: msg.src,
-                body: Body {
-                    msg_id: msg.body.msg_id,
-                    type_,
-                    payload,
-                },
+                body: payload,
             })
         } else {
             None
@@ -77,6 +73,8 @@ impl Rurtex {
             buffer.clear();
 
             handle.read_line( &mut buffer).expect("Should read fine");
+
+            eprintln!("msg: {buffer}");
 
             let request: HeaderMessage = serde_json::from_str(&buffer).expect("Message");
             let response = self.process(request);

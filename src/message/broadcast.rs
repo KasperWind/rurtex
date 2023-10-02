@@ -1,58 +1,75 @@
+use std::collections::BTreeMap;
+
 use serde_derive::{Serialize, Deserialize};
 use serde_json::Map;
 
-use super::Payload;
+use super::{Payload, BodyRequestBase, BodyResponseBase};
 
 #[derive(Serialize, Deserialize)]
 pub struct BroadcastRequest {
+    #[serde(flatten)]
+    pub body: BodyRequestBase,
     pub message: isize,
 }
 
 impl<'a> BroadcastRequest {
     #[allow(dead_code)]
-    pub fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)> {
+    pub fn respond(self) -> Option<Payload<'a>> {
 
-        Some((Payload::BroadcastOk(BroadcastResponse { in_reply_to: msg_id }),"broadcast_ok"))
+        Some(Payload::BroadcastOk{b: BroadcastResponse {
+            body: BodyResponseBase { in_reply_to: self.body.msg_id }
+        }})
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct BroadcastResponse {
-    pub in_reply_to: isize,
+    #[serde(flatten)]
+    pub body: BodyResponseBase,
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct ReadRequest { }
+pub struct ReadRequest { 
+    #[serde(flatten)]
+    pub body: BodyRequestBase,
+}
 
 impl<'a> ReadRequest {
     #[allow(dead_code)]
-    pub fn respond(self, messages: &Vec<isize>, msg_id: isize) -> Option<(Payload<'a>, &'a str)> {
-
-        Some((Payload::ReadOk(ReadResponse { in_reply_to: msg_id, messages: messages.clone() }),"read_ok "))
+    pub fn respond(self, messages: &Vec<isize>) -> Option<Payload<'a>> {
+        Some(Payload::ReadOk{r: ReadResponse { 
+            body: BodyResponseBase { in_reply_to: self.body.msg_id},
+            messages: messages.clone() 
+        }})
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct ReadResponse {
-    pub in_reply_to: isize,
+    #[serde(flatten)]
+    pub body: BodyResponseBase,
     pub messages: Vec<isize>,
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct TopologyRequest<'a> {
+    #[serde(flatten)]
+    pub body: BodyRequestBase,
     #[serde(borrow)]
-    pub topology: Vec<(&'a str, Vec<&'a str>)>,
+    pub topology: BTreeMap<&'a str, Vec<&'a str>>,
+
 }
 
 impl<'a> TopologyRequest<'a> {
     #[allow(dead_code)]
-    pub fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)> {
+    pub fn respond(self) -> Option<Payload<'a>> {
 
-        Some((Payload::TopologyOk(TopologyResponse { in_reply_to: msg_id }),"topology_ok"))
+        Some(Payload::TopologyOk{t: TopologyResponse { body: BodyResponseBase { in_reply_to:  self.body.msg_id }}})
     }
 }
 
 #[derive(Serialize, Deserialize)]
 pub struct TopologyResponse {
-    pub in_reply_to: isize,
+    #[serde(flatten)]
+    pub body: BodyResponseBase,
 }
