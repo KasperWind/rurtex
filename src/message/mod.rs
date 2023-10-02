@@ -4,7 +4,7 @@ mod generate;
 use serde::{Deserialize, Serialize};
 
 use self::{
-    broadcast::{BroadcastRequest, BroadcastResponse},
+    broadcast::{BroadcastRequest, BroadcastResponse, ReadResponse, ReadRequest, TopologyRequest, TopologyResponse},
     echo::{EchoRequest, EchoResponse},
     generate::{GenerateRequest, GenerateResponse},
 };
@@ -15,36 +15,6 @@ pub struct HeaderMessage<'a> {
     #[serde(rename = "dest")]
     pub dst: &'a str,
     pub body: Body<'a>,
-}
-
-impl<'a> HeaderMessage<'a> {
-    #[allow(dead_code)]
-    pub fn respond(self) -> Option<HeaderMessage<'a>> {
-        let resp: Option<(Payload<'_>, &'a str)> = match self.body.payload {
-            Payload::Init(i) => i.respond(self.body.msg_id),
-            Payload::InitOk(_) => None,
-            Payload::Echo(e) => e.respond(self.body.msg_id),
-            Payload::EchoOk(_) => None,
-            Payload::Generate(g) => g.respond(self.body.msg_id),
-            Payload::GenerateOk(_) => None,
-            Payload::Broadcast(b) => b.respond(self.body.msg_id),
-            Payload::BroadcastOk(_) => None,
-        };
-
-        if let Some((payload, type_)) = resp {
-            Some(HeaderMessage {
-                src: self.dst,
-                dst: self.src,
-                body: Body {
-                    msg_id: self.body.msg_id,
-                    type_,
-                    payload,
-                },
-            })
-        } else {
-            None
-        }
-    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -73,6 +43,11 @@ pub enum Payload<'a> {
     GenerateOk(GenerateResponse),
     Broadcast(BroadcastRequest),
     BroadcastOk(BroadcastResponse),
+    Read(ReadRequest),
+    ReadOk(ReadResponse),
+    #[serde(borrow)]
+    Topology(TopologyRequest<'a>),
+    TopologyOk(TopologyResponse),
 }
 
 #[derive(Serialize, Deserialize)]
@@ -82,7 +57,8 @@ pub struct InitRequest<'a> {
 }
 
 impl<'a> InitRequest<'a> {
-    fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)> {
+    #[allow(dead_code)]
+    pub fn respond(self, msg_id: isize) -> Option<(Payload<'a>, &'a str)> {
         Some((
             Payload::InitOk(InitResponse {
                 in_reply_to: msg_id,
