@@ -3,7 +3,7 @@ use ulid::Ulid;
 
 use super::{BodyRequestBase, Payload, BodyResponseBase};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GenerateRequest { 
     #[serde(flatten)]
     pub body: BodyRequestBase,
@@ -23,7 +23,7 @@ impl<'a> GenerateRequest {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct GenerateResponse {
     #[serde(flatten)]
     pub body: BodyResponseBase,

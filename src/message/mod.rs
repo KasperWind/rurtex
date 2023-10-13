@@ -1,6 +1,6 @@
 mod echo;
 mod generate;
-mod broadcast;
+pub mod broadcast;
 use serde::{Deserialize, Serialize};
 
 use self::{
@@ -9,7 +9,7 @@ use self::{
     broadcast::{BroadcastRequest, BroadcastResponse, ReadResponse, ReadRequest, TopologyRequest, TopologyResponse},
 };
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct HeaderMessage<'a> {
     pub src: &'a str,
     #[serde(rename = "dest")]
@@ -17,19 +17,19 @@ pub struct HeaderMessage<'a> {
     pub body: Payload<'a>,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct BodyRequestBase {
-    pub msg_id: isize,
+    pub msg_id: usize,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct BodyResponseBase {
-    pub in_reply_to: isize,
+    pub in_reply_to: usize,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "type")]
 #[serde(rename_all = "snake_case")]
 pub enum Payload<'a> {
@@ -58,32 +58,32 @@ pub enum Payload<'a> {
         g: GenerateResponse
     },
     Broadcast{
-		#[serde(flatten)]
-		b :BroadcastRequest
-	},
+        #[serde(flatten)]
+        b :BroadcastRequest
+    },
     BroadcastOk{
-		#[serde(flatten)]
-		b :BroadcastResponse
-	},
+        #[serde(flatten)]
+        b :BroadcastResponse
+    },
     Read{
-		#[serde(flatten)]
-		r :ReadRequest
-	},
+        #[serde(flatten)]
+        r :ReadRequest
+    },
     ReadOk{
-		#[serde(flatten)]
-		r :ReadResponse
-	},
+        #[serde(flatten)]
+        r :ReadResponse
+    },
     Topology{
-		#[serde(flatten, borrow)]
-		t :TopologyRequest<'a>
-	},
+        #[serde(flatten, borrow)]
+        t :TopologyRequest<'a>
+    },
     TopologyOk{
-		#[serde(flatten)]
-		t :TopologyResponse
+        #[serde(flatten)]
+        t :TopologyResponse
     },
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InitRequest<'a> {
     #[serde(flatten)]
     pub body: BodyRequestBase,
@@ -104,7 +104,7 @@ impl<'a> InitRequest<'a> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct InitResponse {
     #[serde(flatten)]
     pub body: BodyResponseBase,

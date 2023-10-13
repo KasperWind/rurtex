@@ -2,7 +2,7 @@ use serde_derive::{Serialize, Deserialize};
 
 use super::{Payload, BodyResponseBase, BodyRequestBase};
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EchoRequest<'a> {
     #[serde(flatten)]
     pub body: BodyRequestBase,
@@ -12,6 +12,7 @@ pub struct EchoRequest<'a> {
 impl<'a> EchoRequest<'a> {
     #[allow(dead_code)]
     pub fn respond(self) -> Option<Payload<'a>> {
+        // debug!("Echo Request,: {}", self.echo);
         Some(Payload::EchoOk { e: 
             EchoResponse { 
                 echo: self.echo,
@@ -22,7 +23,7 @@ impl<'a> EchoRequest<'a> {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct EchoResponse<'a> {
     #[serde(flatten)]
     pub body: BodyResponseBase,
